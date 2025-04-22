@@ -1,4 +1,5 @@
 import json
+import logging
 
 import requests
 from flask import request
@@ -8,7 +9,9 @@ import models
 from extensions.ext_redis import redis_client
 
 from .account_service import AccountService, RegisterService, TokenPair
-from  controllers.web.passport import TokenPassportService
+from controllers.web.passport import TokenPassportService
+
+logger = logging.getLogger(__name__)
 # 格力单点登录
 GREE_SSO_URL_GET_TOKEN = 'http://wfserver.gree.com/sso/ssoapi/GetToken'
 GREE_SSO_URL_GET_USER_INFO = 'http://wfserver.gree.com/sso/ssoapi/GetUserInfo'
@@ -71,6 +74,7 @@ def get_token(callback: str) -> ResultInfo:
         json_data = response.json()
         if 'Success' in json_data or 'Message' in json_data:
             json_data = ResultInfo(**json_data)
+            logger.exception(json_data)
             return json_data
 
 
@@ -90,6 +94,7 @@ def get_user_info(token: str) -> UserInfo:
     if response.status_code == 200:
         json_data = response.json()
         user_info = UserInfo(**json_data)
+        logger.exception(user_info)
         return user_info
 
 
@@ -172,4 +177,66 @@ class GreeSsoService:
         AccountService.login(account)
         return user_info.StaffID
 
+    @staticmethod
+    def gree_sso_get_token(callback: str) -> str:
+        ip = request.remote_addr
+        forwarded_ip = request.headers.get('X-Forwarded-For')
+        if forwarded_ip:
+            ip = forwarded_ip.split(',')[0].split()
+        params = {
+            'appid': GREE_SSO_APP_ID,
+            'appkey': GREE_SSO_APP_KEY,
+            'ip': ip,
+            'callback': callback
+        }
+        # 创建一个 Session 对象
+        session = requests.Session()
+        # 准备请求
+        req = requests.Request('GET', GREE_SSO_URL_GET_USER_INFO, params=params)
+        prepped = session.prepare_request(req)
+        requestTmp = {
+            'url': prepped.url,
+            'headers': prepped.headers,
+            'path': prepped.path_url,
+        }
+        response = session.send(prepped)
+        # response = requests.get(GREE_SSO_URL_GET_TOKEN, params=params)
+        if response.status_code == 200:
+            json_data = response.json()
+            if 'Success' in json_data or 'Message' in json_data:
+                return json_data
+        if not response:
+            return json.dumps(requestTmp)
+        else:
+            return response.json()
 
+    @staticmethod
+    def gree_sso_get_user_info(token: str) -> str:
+        ip = request.remote_addr
+        forwarded_ip = request.headers.get('X-Forwarded-For')
+        if forwarded_ip:
+            ip = forwarded_ip.split(',')[0].split()
+        params = {
+            'appid': GREE_SSO_APP_ID,
+            'appkey': GREE_SSO_APP_KEY,
+            'ip': ip,
+            'token': token
+        }
+        # 创建一个 Session 对象
+        session = requests.Session()
+        # 准备请求
+        req = requests.Request('GET', GREE_SSO_URL_GET_USER_INFO, params=params)
+        prepped = session.prepare_request(req)
+        requestTmp = {
+            'url': prepped.url,
+            'headers': prepped.headers,
+            'path': prepped.path_url,
+        }
+        response = session.send(prepped)
+        if response.status_code == 200:
+            json_data = response.json()
+            return json_data
+        if not response:
+            return json.dumps(requestTmp)
+        else:
+            return response.json()

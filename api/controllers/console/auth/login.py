@@ -143,6 +143,26 @@ class GreeTokenPassportApi(Resource):
         return {"access_token": token_passport}
 
 
+class GreeSSOGetTokenApi(Resource):
+
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument("callback", type=str, required=True, location="args", help="格力callback单点登录")
+        args = parser.parse_args()
+        token = GreeSsoService.gree_sso_get_token(args['callback'])
+        return {"access_token": token}
+
+
+class GreeSSOGetUserInfoApi(Resource):
+
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument("token", type=str, required=True, location="args", help="格力token单点登录")
+        args = parser.parse_args()
+        user_info = GreeSsoService.gree_sso_get_user_info(args['token'])
+        return {"user_info": user_info}
+
+
 class LogoutApi(Resource):
     @setup_required
     def get(self):
@@ -282,6 +302,8 @@ api.add_resource(LogoutApi, "/logout")
 api.add_resource(GreeSSOLoginApi, "/gree_sso")
 api.add_resource(GreeTokenLogoutApi, "/gree_token_login")
 api.add_resource(GreeAuthCodeGetMailApi, "/gree_authcode_get_mail")
+api.add_resource(GreeSSOGetTokenApi, "/gree_sso_get_token")
+api.add_resource(GreeSSOGetUserInfoApi, "/gree_sso_get_user_info")
 api.add_resource(GreeTokenPassportApi, "/gree_token_passport")
 api.add_resource(EmailCodeLoginSendEmailApi, "/email-code-login")
 api.add_resource(EmailCodeLoginApi, "/email-code-login/validity")
