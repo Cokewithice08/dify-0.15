@@ -27,6 +27,8 @@ from events.tenant_event import tenant_was_created
 from libs.helper import email, extract_remote_ip
 from libs.password import valid_password
 from models.account import Account
+from services.gree_organization_service import GreeOrganizationService, WorkspaceParam
+from typing import List
 from services.account_service import AccountService, RegisterService, TenantService
 from services.billing_service import BillingService
 from services.errors.account import AccountRegisterError
@@ -103,11 +105,19 @@ class GreeSSOLoginApi(Resource):
     def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument("callback", type=str, required=True, location="args", help="单点登录获取的参数")
+        parser.add_argument("sourceUrl", type=str, required=True, location="args", help="格力authcode单点登录")
         args = parser.parse_args()
-        token_pair = GreeSsoService.gree_sso(args['callback'])
-        console_token = token_pair.access_token
-        refresh_token = token_pair.refresh_token
-        return redirect(f"http://localhost:3000/signin?console_token={console_token}&refresh_token={refresh_token}")
+        if "signin" in args["sourceUrl"]:
+            token_pair = GreeSsoService.gree_sso(args['callback'])
+            console_token = token_pair.access_token
+            refresh_token = token_pair.refresh_token
+            redirect_uri = args["sourceUrl"] + "?console_token=" + console_token + "&refresh_token=" + refresh_token
+            # return redirect(f"http://10.23.197.232/signin?console_token={console_token}&refresh_token={refresh_token}")
+            return redirect(redirect_uri)
+        else:
+            gree_mail = GreeSsoService.gree_sso_mail(args["callback"])
+            redirect_url = args["sourceUrl"] + "?gree_mail=" + gree_mail
+            return redirect(redirect_url)
 
 
 # 根据token登录
@@ -161,6 +171,16 @@ class GreeSSOGetUserInfoApi(Resource):
         args = parser.parse_args()
         user_info = GreeSsoService.gree_sso_get_user_info(args['token'])
         return {"user_info": user_info}
+
+
+class GreeCreateWorkspaceByAdminApi(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument("workspace_param", type=List, request=True, location="json")
+        args = parser.parse_args()
+        workspace = WorkspaceParam(gree_mail=args['workspace_param'])
+        GreeOrganizationService.create_workspace_admin(workspace)
+        return {"result": "success"}
 
 
 class LogoutApi(Resource):
@@ -305,6 +325,7 @@ api.add_resource(GreeAuthCodeGetMailApi, "/gree_authcode_get_mail")
 api.add_resource(GreeSSOGetTokenApi, "/gree_sso_get_token")
 api.add_resource(GreeSSOGetUserInfoApi, "/gree_sso_get_user_info")
 api.add_resource(GreeTokenPassportApi, "/gree_token_passport")
+api.add_resource(GreeCreateWorkspaceByAdminApi, "/gree_create_workspace_by_admin")
 api.add_resource(EmailCodeLoginSendEmailApi, "/email-code-login")
 api.add_resource(EmailCodeLoginApi, "/email-code-login/validity")
 api.add_resource(ResetPasswordSendEmailApi, "/reset-password")

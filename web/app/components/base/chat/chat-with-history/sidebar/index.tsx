@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +12,7 @@ import { Edit05 } from '@/app/components/base/icons/src/vender/line/general'
 import type { ConversationItem } from '@/models/share'
 import Confirm from '@/app/components/base/confirm'
 import RenameModal from '@/app/components/base/chat/chat-with-history/sidebar/rename-modal'
+import MenuButton from './menu-button'
 
 const Sidebar = () => {
   const { t } = useTranslation()
@@ -30,6 +32,18 @@ const Sidebar = () => {
   } = useChatWithHistoryContext()
   const [showConfirm, setShowConfirm] = useState<ConversationItem | null>(null)
   const [showRename, setShowRename] = useState<ConversationItem | null>(null)
+  // 步骤1：解析 URL 参数
+  const urlsearchParams = new URLSearchParams(window.location.search)
+  const greeMail = urlsearchParams.get('gree_mail')
+  const pathname = window.location.pathname
+  const origin = window.location.origin
+
+  if (greeMail) {
+    localStorage.setItem('gree_mail', greeMail)
+    window.history.replaceState({}, '', pathname)
+  }
+  const turnUrl = "https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&sourceUrl=" + origin + pathname
+
 
   const handleOperate = useCallback((type: string, item: ConversationItem) => {
     if (type === 'pin')
@@ -58,6 +72,9 @@ const Sidebar = () => {
     if (showRename)
       handleRenameConversation(showRename.id, newName, { onSuccess: handleCancelRename })
   }, [showRename, handleRenameConversation, handleCancelRename])
+
+  const gree_mail = localStorage.getItem('gree_mail')
+
 
   return (
     <div className='shrink-0 h-full flex flex-col w-[240px] border-r border-r-gray-100'>
@@ -115,6 +132,34 @@ const Sidebar = () => {
           )
         }
       </div>
+
+      {/* 左下角单点登录和用户信息按钮 */}
+      <div className='shrink-0 p-4'>
+        {!gree_mail && (
+          <a href={turnUrl} className='flex items-center gap-3 p-4'>
+            <AppIcon
+              className='shrink-0'
+              size='small'
+              iconType={appData?.site.icon_type}
+              icon={appData?.site.icon}
+              background={appData?.site.icon_background}
+              imageUrl={appData?.site.icon_url}
+            />
+            <span className='text-sm'>未登录</span>
+          </a>
+        )}
+        {
+          gree_mail && (
+            <MenuButton />
+          )
+        }
+      </div>
+
+
+
+
+
+
       {appData?.site.copyright && (
         <div className='px-4 pb-4 text-xs text-gray-400'>
           © {(new Date()).getFullYear()} {appData?.site.copyright}

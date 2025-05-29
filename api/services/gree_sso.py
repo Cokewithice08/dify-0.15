@@ -124,12 +124,38 @@ def get_gree_token_pair(token: str) -> TokenPair:
     return AccountService.login(account)
 
 
+def create_or_update_user_info(token: str) -> UserInfo:
+    user_info = get_user_info(token)
+    account = AccountService.get_user_through_email(user_info.OpenID)
+    if not account:
+        #  没有账号信息新注册再登录
+        email = user_info.OpenID
+        name = user_info.UserName
+        password = user_info.AppAccount + "@GreeSSO2025"
+        language = 'zh-Hans'
+        status = models.AccountStatus.ACTIVE
+        is_setup = True
+        worksapce = False
+        account = RegisterService.register(email, name, password, None, None, language, status, is_setup, worksapce)
+        # TenantService.create_owner_tenant_if_not_exist(account=account, is_setup=True)
+    redis_key = get_redis_key(user_info.StaffID)
+    user_info.user_id = account.id
+    redis_client.set(redis_key, json.dumps(user_info.__dict__))
+    return user_info
+
+
 class GreeSsoService:
 
     @staticmethod
     def gree_sso(callback: str) -> TokenPair:
         token = get_token(callback)
         return get_gree_token_pair(token.Message)
+
+    @staticmethod
+    def gree_sso_mail(callback: str) -> str:
+        token = get_token(callback)
+        user_info = create_or_update_user_info(token.Message)
+        return user_info.StaffID
 
     @staticmethod
     def gree_login_by_token(token: str) -> TokenPair:
