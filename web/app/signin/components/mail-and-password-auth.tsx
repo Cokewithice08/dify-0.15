@@ -119,7 +119,7 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
 
   const handleSSOLogin = () => {
     // 单点登录跳转逻辑
-    window.location.href = `https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&lang=${locale}`
+    window.location.href = `https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&sourceUrl=http://10.23.197.232/signin`
   }
 
   return <form onSubmit={() => { }}>
