@@ -27,7 +27,7 @@ from events.tenant_event import tenant_was_created
 from libs.helper import email, extract_remote_ip
 from libs.password import valid_password
 from models.account import Account
-from services.gree_organization_service import GreeOrganizationService, WorkspaceParam
+from services.gree_organization_service import GreeOrganizationService, WorkspaceAdmin
 from typing import List
 from services.account_service import AccountService, RegisterService, TenantService
 from services.billing_service import BillingService
@@ -174,12 +174,16 @@ class GreeSSOGetUserInfoApi(Resource):
 
 
 class GreeCreateWorkspaceByAdminApi(Resource):
+    @setup_required
     def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument("workspace_param", type=List, request=True, location="json")
+        parser.add_argument("workspace_param", type=list, required=True, location="json", help="添加workspaceAdmin")
         args = parser.parse_args()
-        workspace = WorkspaceParam(gree_mail=args['workspace_param'])
-        GreeOrganizationService.create_workspace_admin(workspace)
+        workspace_list = []
+        for workspace in args["workspace_param"]:
+            workspace_admin = WorkspaceAdmin(mail=workspace["mail"], parent_mail=workspace["parent_mail"])
+            workspace_list.append(workspace_admin)
+        GreeOrganizationService.create_workspace_admin(workspace_list)
         return {"result": "success"}
 
 

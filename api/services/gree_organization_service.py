@@ -9,10 +9,6 @@ class WorkspaceAdmin(BaseModel):
     parent_mail: str
 
 
-class WorkspaceParam(BaseModel):
-    gree_mail: List[WorkspaceAdmin]
-
-
 # 创建账号信息和workspace
 def create_workspace(workspace: WorkspaceAdmin):
     if workspace.parent_mail:
@@ -27,11 +23,12 @@ def create_workspace(workspace: WorkspaceAdmin):
             is_setup = True
             workspace = True
             account = RegisterService.register(email, name, password, None, None, language, status, is_setup, workspace)
-        parent_tenant = TenantService.get_current_tenant_by_account(account)
+        parent_tenant = TenantService.get_account_owner_tenant_by_account(account)
         if not parent_tenant:
             tenant_name = f"{account.name}'s Workspace"
             tenant_setup = True
-            parent_tenant = TenantService.create_owner_tenant_if_not_exist(account, tenant_name, tenant_setup)
+            TenantService.create_owner_tenant_if_not_exist(account, tenant_name, tenant_setup)
+            parent_tenant = TenantService.get_account_owner_tenant_by_account(account)
         if workspace.mail:
             tenant_mail = workspace.mail + '@it2004.gree.com.cn'
             tenant_account = AccountService.get_user_through_email(tenant_mail)
@@ -45,11 +42,12 @@ def create_workspace(workspace: WorkspaceAdmin):
                 workspace = True
                 tenant_account = RegisterService.register(email, name, password, None, None, language, status, is_setup,
                                                           workspace)
-            child_tenant = TenantService.get_current_tenant_by_account(tenant_account)
+            child_tenant = TenantService.get_account_owner_tenant_by_account(tenant_account)
             if not child_tenant:
                 tenant_name = f"{tenant_account.name}'s Workspace"
                 tenant_setup = True
-                child_tenant = TenantService.create_owner_tenant_if_not_exist(tenant_account, tenant_name, tenant_setup)
+                TenantService.create_owner_tenant_if_not_exist(tenant_account, tenant_name, tenant_setup)
+                child_tenant = TenantService.get_account_owner_tenant_by_account(tenant_account)
             tenant_account_join = TenantService.create_tenant_member(child_tenant, account, "admin")
 
 
@@ -57,7 +55,7 @@ class GreeOrganizationService:
 
     #  提供给签审的接口：为创建的workspace添加管理员
     @staticmethod
-    def create_workspace_admin(param: WorkspaceParam):
-        if param.gree_mail:
-            for workspace_admin in param.gree_mail:
+    def create_workspace_admin(param: List[WorkspaceAdmin]):
+        if param:
+            for workspace_admin in param:
                 create_workspace(workspace_admin)
