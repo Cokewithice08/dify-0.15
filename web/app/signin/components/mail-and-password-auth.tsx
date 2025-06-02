@@ -28,20 +28,44 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
   const [email, setEmail] = useState(emailFromLink)
   const [password, setPassword] = useState('')
   // 步骤1：解析 URL 参数
-  const urlsearchParams = new URLSearchParams(window.location.search)
-  console.log(urlsearchParams)
-  const consoleToken = urlsearchParams.get('console_token')
-  const refreshToken = urlsearchParams.get('refresh_token')
+  // const urlsearchParams = new URLSearchParams(window.location.search)
+  // console.log(urlsearchParams)
+  // const consoleToken = urlsearchParams.get('console_token')
+  // const refreshToken = urlsearchParams.get('refresh_token')
 
-  // 步骤2：验证并存储敏感数据
-  if (consoleToken && refreshToken) {
-    // 安全存储到 sessionStorage（会话级存储）
-    localStorage.setItem('console_token', consoleToken)
-    localStorage.setItem('refresh_token', refreshToken)
+  // // 步骤2：验证并存储敏感数据
+  // if (consoleToken && refreshToken) {
+  //   // 安全存储到 sessionStorage（会话级存储）
+  //   localStorage.setItem('console_token', consoleToken)
+  //   localStorage.setItem('refresh_token', refreshToken)
 
-    // 步骤3：清除 URL 中的敏感参数
-    router.replace('/apps')
-  }
+  //   // 步骤3：清除 URL 中的敏感参数
+  //   router.replace('/apps')
+  // } else {
+  //   useEffect(() => {
+  //     window.location.href = `https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&sourceUrl=http://10.23.197.232/signin`
+  //   }, [])
+  // }
+  useEffect(() => {
+    // 获取URL参数
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const consoleToken = urlSearchParams.get('console_token');
+    const refreshToken = urlSearchParams.get('refresh_token');
+
+    // 步骤2：验证并存储敏感数据
+    if (consoleToken && refreshToken) {
+      // 安全存储到 sessionStorage（会话级存储）
+      sessionStorage.setItem('console_token', consoleToken);
+      sessionStorage.setItem('refresh_token', refreshToken);
+
+      // 步骤3：清除 URL 中的敏感参数
+      router.replace('/apps');
+    } else {
+      // 如果没有获取到token，跳转到登录页面
+      window.location.href = 'https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&sourceUrl=http://10.23.197.232/signin';
+    }
+  }, [router]);
+
   const [isLoading, setIsLoading] = useState(false)
   const handleEmailPasswordLogin = async () => {
     if (!email) {
@@ -121,9 +145,7 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
     // 单点登录跳转逻辑
     window.location.href = `https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&sourceUrl=http://10.23.197.232/signin`
   }
-  useEffect(() => {
-    window.location.href = `https://wfserver.gree.com/Sso/Oauth/Show?appID=0347f117-1b67-46a1-b4ec-a173f7bffa14&sourceUrl=http://10.23.197.232/signin`
-  }, [])
+
 
   return null
 }
